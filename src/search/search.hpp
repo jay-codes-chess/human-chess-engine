@@ -1,8 +1,12 @@
 /**
- * Search Module - MCTS or Alpha-Beta
+ * Search Module - Alpha-Beta with Human-Like Selectivity
  * 
- * Implements selective search for human-like move selection.
- * Can use either MCTS (Monte Carlo Tree Search) or traditional alpha-beta.
+ * Implements selective search that mirrors human thinking:
+ * - Uses candidate move generation (Kotov method)
+ * - Selective depth based on position complexity
+ * - Time-aware thinking patterns
+ * 
+ * Reference: Alexander Kotov "Play Like a Grandmaster"
  */
 
 #ifndef SEARCH_HPP
@@ -10,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace Search {
 
@@ -22,7 +27,7 @@ struct SearchResult {
     std::vector<std::string> pv;
 };
 
-// Initialize search
+// Initialize search (creates transposition table)
 void initialize();
 
 // Set search parameters
@@ -31,8 +36,8 @@ void set_hash_size(int mb);
 void set_use_mcts(bool use_mcts);
 void set_depth_limit(int depth);
 
-// Search position
-SearchResult search(const std::string& fen, int max_time_ms = 30000);
+// Search position with time limit and optional depth
+SearchResult search(const std::string& fen, int max_time_ms = 30000, int max_search_depth = 10);
 
 // Stop search
 void stop();

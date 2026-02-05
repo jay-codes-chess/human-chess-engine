@@ -123,7 +123,7 @@ std::string Board::get_fen() const {
                     ss << empty;
                     empty = 0;
                 }
-                char ch = " pnbrqk"[p];
+                char ch = " PNBRQK"[p];  // Start with uppercase
                 if (c == BLACK) ch = std::tolower(ch);
                 ss << ch;
             }
