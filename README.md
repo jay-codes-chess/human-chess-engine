@@ -34,16 +34,46 @@ Unlike Stockfish which plays perfect chess through brute-force search, this engi
 ```
 human-chess-engine/
 ├── src/
-│   ├── evaluation/     # Custom Silman-based evaluation
-│   ├── search/         # MCTS or alpha-beta
-│   ├── uci/            # UCI protocol
-│   └── utils/          # Board representation
+│   ├── main.cpp              # Entry point
+│   ├── evaluation/           # Silman-based evaluation ✓
+│   │   ├── evaluation.hpp
+│   │   └── evaluation.cpp
+│   ├── search/              # MCTS/Alpha-Beta (placeholder)
+│   │   ├── search.hpp
+│   │   └── search.cpp
+│   ├── uci/                 # UCI protocol ✓
+│   │   ├── uci.hpp
+│   │   └── uci.cpp
+│   └── utils/               # Board representation ✓
+│       ├── board.hpp
+│       └── board.cpp
 ├── data/
-│   └── opening_book/   # Human-style opening prep
+│   └── opening_book/
 ├── docs/
-│   └── style_guide.md  # Evaluation philosophy
+│   └── style_guide.md        # Evaluation philosophy
 └── Makefile
 ```
+
+## Current Status
+
+### ✅ Working
+- Bitboard representation (fast 64-bit boards)
+- FEN parsing and generation
+- Move generation for all pieces
+- UCI protocol integration
+- Basic evaluation (material, activity, pawns, space)
+- Style profiles (Classical, Attacking, Tactical, Positional, Technical)
+
+### 🔄 In Progress
+- Search algorithm (MCTS/Alpha-Beta)
+- Verbal PV explanations
+- Checkmate detection
+
+### 📋 Roadmap
+- Proper Zobrist hashing
+- Transposition tables
+- Quiescence search
+- Opening book integration
 
 ## Knowledge Base
 
@@ -55,17 +85,6 @@ Built on concepts from:
 - Vladimir Vukovic - "The Art of Attack"
 - Neil McDonald - "Positional Sacrifices"
 - Ivan Sokolov - "Sacrifice and Initiative"
-
-## Roadmap
-
-```
-Phase 1: Basic evaluation function (Silman imbalances)
-Phase 2: Search implementation (MCTS or alpha-beta)
-Phase 3: UCI protocol integration
-Phase 4: Style profiles via UCI options
-Phase 5: Verbal PV output
-Phase 6: Self-play training (future NNUE)
-```
 
 ## License
 
