@@ -270,11 +270,8 @@ std::vector<int> generate_candidates(const Board& board) {
 int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
     nodes_searched++;
     
-    std::cerr << "[AB] depth=" << depth << " color=" << color << " nodes_so_far=" << nodes_searched << std::endl;
-    
     // Check for time
     if (should_stop()) {
-        std::cerr << "[AB] Stopped by time" << std::endl;
         return 0;
     }
     
@@ -287,7 +284,6 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
     
     // Terminal position or max depth
     if (depth == 0) {
-        std::cerr << "[AB] Reached depth 0, evaluating" << std::endl;
         return evaluate_position(board, color);
     }
     
