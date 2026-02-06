@@ -46,6 +46,28 @@ struct TTEntry {
 static const int TT_SIZE = 1 << 20;  // 1M entries
 static TTEntry* transposition_table;
 
+// Killer moves - moves that caused cutoffs at sibling nodes
+static int killer_moves[64][2];  // [depth][2 killer moves]
+
+// History heuristic - scores moves based on success
+static int history_scores[64][64];  // [from][to] history score
+
+// Update history score
+void update_history(int move, int depth, int bonus) {
+    int from = move >> 6;
+    int to = move & 63;
+    history_scores[from][to] += bonus;
+    
+    // Cap history scores to prevent overflow
+    if (history_scores[from][to] > 10000) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                history_scores[i][j] = std::max(0, history_scores[i][j] / 2);
+            }
+        }
+    }
+}
+
 // Initialize search
 void initialize() {
     transposition_table = new TTEntry[TT_SIZE];
@@ -55,6 +77,15 @@ void initialize() {
         transposition_table[i].score = 0;
         transposition_table[i].move = 0;
         transposition_table[i].flag = 0;
+    }
+    // Initialize history and killer tables
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 2; j++) {
+            killer_moves[i][j] = 0;
+        }
+        for (int j = 0; j < 64; j++) {
+            history_scores[i][j] = 0;
+        }
     }
 }
 
@@ -194,20 +225,58 @@ bool is_legal(const Board& board, int move) {
     return !test_board.is_in_check(color);
 }
 
-// Order moves for better alpha-beta
-void order_moves(std::vector<int>& moves, const Board& board, int tt_move) {
-    // Killer move heuristic - TT move first
+// Get piece value for ordering
+int get_piece_value(int piece) {
+    switch(piece) {
+        case PAWN: return 100;
+        case KNIGHT: return 320;
+        case BISHOP: return 330;
+        case ROOK: return 500;
+        case QUEEN: return 900;
+        case KING: return 20000;
+        default: return 0;
+    }
+}
+
+// Score move for ordering (used in order_moves)
+int score_move_for_order(Board& board, int move, int tt_move, int depth) {
+    int score = 0;
+    
+    // TT move gets highest priority
+    if (move == tt_move) return 100000;
+    
+    int from = move >> 6;
+    int to = move & 63;
+    int piece = board.piece_at(from);
+    int captured = board.piece_at(to);
+    
+    // Captures: MVV-LVA ordering
+    if (captured != NO_PIECE) {
+        int attacker_val = get_piece_value(piece);
+        int victim_val = get_piece_value(captured);
+        score = 10000 + victim_val * 10 - attacker_val;
+    }
+    
+    // Killer moves
+    if (move == killer_moves[depth][0]) {
+        score = 8000;
+    } else if (move == killer_moves[depth][1]) {
+        score = 7000;
+    }
+    
+    // History heuristic
+    score += history_scores[from][to];
+    
+    return score;
+}
+
+// Order moves for better alpha-beta performance
+void order_moves(std::vector<int>& moves, Board& board, int tt_move, int depth) {
+    // Score and sort all moves
     std::sort(moves.begin(), moves.end(), [&](int a, int b) {
-        if (a == tt_move) return true;
-        if (b == tt_move) return false;
-        
-        // Capture ordering (MVV-LVA simplified)
-        int capture_a = board.piece_at(a & 63);
-        int capture_b = board.piece_at(b & 63);
-        if (capture_a != NO_PIECE && board.color_at(a & 63) != board.color_at(a & 63)) {
-            capture_a = 5;  // Promote to capture
-        }
-        return capture_a > capture_b;
+        int score_a = score_move_for_order(board, a, tt_move, depth);
+        int score_b = score_move_for_order(board, b, tt_move, depth);
+        return score_a > score_b;
     });
 }
 
@@ -292,11 +361,21 @@ int quiescence_search(Board& board, int alpha, int beta, int color) {
         }
     }
     
-    // Order captures by piece value captured (MVV-LVA)
+    // Order captures using MVV-LVA
     std::sort(captures.begin(), captures.end(), [&](int a, int b) {
-        int captured_a = board.piece_at(a & 63);
-        int captured_b = board.piece_at(b & 63);
-        return captured_a > captured_b;  // Higher value first
+        int from_a = a >> 6;
+        int to_a = a & 63;
+        int from_b = b >> 6;
+        int to_b = b & 63;
+        
+        int piece_a = board.piece_at(from_a);
+        int captured_a = board.piece_at(to_a);
+        int piece_b = board.piece_at(from_b);
+        int captured_b = board.piece_at(to_b);
+        
+        int score_a = get_piece_value(captured_a) * 10 - get_piece_value(piece_a);
+        int score_b = get_piece_value(captured_b) * 10 - get_piece_value(piece_b);
+        return score_a > score_b;
     });
     
     // Search captures
@@ -351,7 +430,7 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
     }
     
     // Order moves
-    order_moves(moves, board, tt_move);
+    order_moves(moves, board, tt_move, depth);
     
     int best_move = moves[0];
     int best_score = -std::numeric_limits<int>::max();
@@ -374,6 +453,13 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
                 
                 if (score >= beta) {
                     flag = 2;  // beta cutoff
+                    // Update killer move
+                    if (moves.size() > 1) {
+                        killer_moves[depth][1] = killer_moves[depth][0];
+                        killer_moves[depth][0] = move;
+                    }
+                    // Update history
+                    update_history(move, depth, depth * depth);
                     break;
                 }
             }
