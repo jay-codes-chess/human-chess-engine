@@ -137,8 +137,9 @@ void cmd_position(const std::vector<std::string>& tokens) {
 }
 
 void cmd_go(const std::vector<std::string>& tokens) {
-    int depth = 3;
+    int depth = 4;
     int movetime = 30000;
+    bool infinite = false;
     
     // Parse go parameters
     for (size_t i = 0; i < tokens.size(); i++) {
@@ -146,6 +147,9 @@ void cmd_go(const std::vector<std::string>& tokens) {
             depth = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "movetime" && i + 1 < tokens.size()) {
             movetime = std::stoi(tokens[i + 1]);
+        } else if (tokens[i] == "infinite") {
+            infinite = true;
+            movetime = 3600000;  // 1 hour max for "infinite"
         }
     }
     
@@ -153,7 +157,20 @@ void cmd_go(const std::vector<std::string>& tokens) {
     auto result = Search::search(current_position, movetime, depth);
     
     // Convert move to UCI notation
-    std::string best_move_uci = Bitboards::move_to_uci(result.best_move);
+    std::string best_move_uci;
+    if (result.best_move != 0) {
+        best_move_uci = Bitboards::move_to_uci(result.best_move);
+    } else {
+        // Fallback: generate first legal move
+        Board b;
+        b.set_from_fen(current_position);
+        auto moves = b.generate_moves();
+        if (!moves.empty()) {
+            best_move_uci = Bitboards::move_to_uci(moves[0]);
+        } else {
+            best_move_uci = "0000";  // No moves (stalemate/checkmate)
+        }
+    }
     
     // Output result
     std::cout << "info depth " << result.depth;
@@ -162,16 +179,7 @@ void cmd_go(const std::vector<std::string>& tokens) {
     std::cout << " time " << result.time_ms;
     std::cout << " pv " << best_move_uci << std::endl;
     
-    // Verbal PV if enabled
-    if (options.verbal_pv) {
-        auto exp = Evaluation::explain(result.score, current_position);
-        std::cout << "comment ";
-        for (size_t i = 0; i < exp.move_reasons.size(); i++) {
-            if (i > 0) std::cout << " | ";
-            std::cout << exp.move_reasons[i];
-        }
-        std::cout << std::endl;
-    }
+    std::cout << "bestmove " << best_move_uci << std::endl;
 }
 
 void cmd_setoption(const std::vector<std::string>& tokens) {

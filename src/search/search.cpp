@@ -526,9 +526,16 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     stop_search = false;
     nodes_searched = 0;
     
+    // Generate legal moves for fallback
+    auto legal_moves = generate_moves(board);
+    if (legal_moves.empty()) {
+        result.nodes = nodes_searched;
+        result.time_ms = get_elapsed_ms();
+        return result;
+    }
+    
     // Calculate adaptive time per depth
     int total_time = max_time_ms_param;
-    int time_per_depth = total_time / max_search_depth;
     
     // Iterative deepening: search depth 1, 2, 3... up to max_search_depth
     for (int depth = 1; depth <= max_search_depth; depth++) {
@@ -543,9 +550,20 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
         result.score = score;
         result.depth = depth;
         
-        // Get best move from TT
+        // Get best move from TT or use first legal move
         int idx = tt_index(board.hash);
-        result.best_move = transposition_table[idx].move;
+        int tt_move = transposition_table[idx].move;
+        
+        // Validate TT move is legal
+        bool tt_move_legal = false;
+        for (int m : legal_moves) {
+            if (m == tt_move) {
+                tt_move_legal = true;
+                break;
+            }
+        }
+        
+        result.best_move = tt_move_legal ? tt_move : legal_moves[0];
         
         // Check time
         if (should_stop()) break;
@@ -553,6 +571,11 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     
     result.nodes = nodes_searched;
     result.time_ms = get_elapsed_ms();
+    
+    // Fallback: if no move found, use first legal move
+    if (result.best_move == 0 && !legal_moves.empty()) {
+        result.best_move = legal_moves[0];
+    }
     
     return result;
 }
