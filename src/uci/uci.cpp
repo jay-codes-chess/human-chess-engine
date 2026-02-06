@@ -28,23 +28,19 @@ void loop(int argc, char* argv[]) {
     std::cout << "Type 'uci' to enter UCI mode, 'quit' to exit." << std::endl;
     
     while (std::getline(std::cin, cmd)) {
-        std::cerr << "[INPUT] '" << cmd << "'" << std::endl;
         std::istringstream ss(cmd);
         std::string token;
         ss >> token;
         
         if (token == "uci") {
-            std::cerr << "[CMD] uci" << std::endl;
             cmd_uci();
         } else if (token == "isready") {
             cmd_is_ready();
         } else if (token == "quit") {
             break;
         } else if (token == "position") {
-            std::cerr << "[CMD] position" << std::endl;
             std::vector<std::string> tokens;
             while (ss >> token) tokens.push_back(token);
-            std::cerr << "[CMD] tokens size=" << tokens.size() << std::endl;
             cmd_position(tokens);
         } else if (token == "go") {
             std::vector<std::string> tokens;
@@ -66,7 +62,6 @@ void loop(int argc, char* argv[]) {
 
 // Display position for debugging
 void cmd_display() {
-    std::cerr << "[DISPLAY] current_position='" << current_position << "'" << std::endl;
     Board b;
     if (!current_position.empty()) {
         b.set_from_fen(current_position);
@@ -137,7 +132,6 @@ void cmd_position(const std::vector<std::string>& tokens) {
     }
     
     current_position = fen;
-    std::cerr << "[DEBUG] Set position: '" << current_position << "'" << std::endl;
     
     // Parse moves if present (simplified - just ignore for now)
 }
