@@ -266,6 +266,55 @@ std::vector<int> generate_candidates(const Board& board) {
     return candidates;
 }
 
+// Quiescence search - extends search in tactical positions
+// Avoids the horizon effect by only searching captures/checks
+int quiescence_search(Board& board, int alpha, int beta, int color) {
+    nodes_searched++;
+    
+    // Stand-pat evaluation
+    int stand_pat = evaluate_position(board, color);
+    if (stand_pat >= beta) return beta;
+    if (stand_pat > alpha) alpha = stand_pat;
+    
+    // Generate only capture moves
+    auto all_moves = generate_moves(board);
+    std::vector<int> captures;
+    
+    for (int move : all_moves) {
+        if (!is_legal(board, move)) continue;
+        
+        int to = move & 63;
+        int captured = board.piece_at(to);
+        
+        // Only include captures (skip quiet moves)
+        if (captured != NO_PIECE) {
+            captures.push_back(move);
+        }
+    }
+    
+    // Order captures by piece value captured (MVV-LVA)
+    std::sort(captures.begin(), captures.end(), [&](int a, int b) {
+        int captured_a = board.piece_at(a & 63);
+        int captured_b = board.piece_at(b & 63);
+        return captured_a > captured_b;  // Higher value first
+    });
+    
+    // Search captures
+    for (int move : captures) {
+        if (should_stop()) return alpha;
+        
+        Board new_board = make_move(board, move);
+        int score = -quiescence_search(new_board, -beta, -alpha, 1 - color);
+        
+        if (score > alpha) {
+            alpha = score;
+            if (alpha >= beta) return beta;
+        }
+    }
+    
+    return alpha;
+}
+
 // Alpha-beta search
 int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
     nodes_searched++;
@@ -282,9 +331,9 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
         if (tt_score <= alpha) return alpha;
     }
     
-    // Terminal position or max depth
+    // Terminal position or max depth - use quiescence search
     if (depth == 0) {
-        return evaluate_position(board, color);
+        return quiescence_search(board, alpha, beta, color);
     }
     
     // Check for checkmate (simplified)
