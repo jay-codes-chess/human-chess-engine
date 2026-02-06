@@ -377,7 +377,7 @@ int calculate_think_time(const Board& board, int base_time) {
     return static_cast<int>(base_time * complexity);
 }
 
-// Main search function
+// Main search function with iterative deepening
 SearchResult search(const std::string& fen, int max_time_ms_param, int max_search_depth) {
     Board board;
     board.set_from_fen(fen);
@@ -387,6 +387,7 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     result.depth = max_search_depth;
     result.nodes = 0;
     result.score = 0;
+    result.best_move = 0;
     
     // Set time
     max_time_ms = max_time_ms_param;
@@ -394,26 +395,33 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     stop_search = false;
     nodes_searched = 0;
     
-    std::cerr << "[SEARCH] Starting search: depth=" << max_search_depth << " time=" << max_time_ms << std::endl;
+    // Calculate adaptive time per depth
+    int total_time = max_time_ms_param;
+    int time_per_depth = total_time / max_search_depth;
     
-    // Calculate adaptive time
-    int think_time = calculate_think_time(board, max_time_ms / 3);
+    // Iterative deepening: search depth 1, 2, 3... up to max_search_depth
+    for (int depth = 1; depth <= max_search_depth; depth++) {
+        if (should_stop()) break;
+        
+        search_depth = depth;
+        
+        // Search at this depth
+        int score = alpha_beta(board, depth, -std::numeric_limits<int>::max(), 
+                              std::numeric_limits<int>::max(), board.side_to_move);
+        
+        result.score = score;
+        result.depth = depth;
+        
+        // Get best move from TT
+        int idx = tt_index(board.hash);
+        result.best_move = transposition_table[idx].move;
+        
+        // Check time
+        if (should_stop()) break;
+    }
     
-    // Single depth search
-    search_depth = max_search_depth;
-    
-    int score = alpha_beta(board, search_depth, -std::numeric_limits<int>::max(), 
-                          std::numeric_limits<int>::max(), board.side_to_move);
-    
-    std::cerr << "[SEARCH] Search complete: score=" << score << " nodes=" << nodes_searched << std::endl;
-    
-    result.score = score;
     result.nodes = nodes_searched;
     result.time_ms = get_elapsed_ms();
-    
-    // Get best move from TT
-    int idx = tt_index(board.hash);
-    result.best_move = transposition_table[idx].move;
     
     return result;
 }
