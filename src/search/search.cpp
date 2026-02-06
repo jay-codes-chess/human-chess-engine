@@ -129,9 +129,8 @@ bool should_stop() {
     
     int elapsed = get_elapsed_ms();
     
-    // Time pressure checks
+    // Only stop if we exceed max time
     if (elapsed > max_time_ms) return true;
-    if (elapsed > panic_time_ms && search_depth > 3) return true;
     
     return false;
 }
@@ -534,9 +533,6 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
         return result;
     }
     
-    // Calculate adaptive time per depth
-    int total_time = max_time_ms_param;
-    
     // Iterative deepening: search depth 1, 2, 3... up to max_search_depth
     for (int depth = 1; depth <= max_search_depth; depth++) {
         if (should_stop()) break;
@@ -564,6 +560,14 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
         }
         
         result.best_move = tt_move_legal ? tt_move : legal_moves[0];
+        
+        // Output progress info for GUI
+        std::string best_move_uci = Bitboards::move_to_uci(result.best_move);
+        std::cout << "info depth " << depth;
+        std::cout << " score cp " << (score / 100);
+        std::cout << " nodes " << nodes_searched;
+        std::cout << " time " << get_elapsed_ms();
+        std::cout << " pv " << best_move_uci << std::endl;
         
         // Check time
         if (should_stop()) break;
