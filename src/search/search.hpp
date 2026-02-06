@@ -19,7 +19,7 @@
 namespace Search {
 
 struct SearchResult {
-    std::string best_move;
+    int best_move;  // encoded move (from << 6) | to
     int score;  // centipawns
     int depth;
     long nodes;

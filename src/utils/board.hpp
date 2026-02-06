@@ -227,6 +227,12 @@ namespace Bitboards {
     
     // All attacks by color
     uint64_t all_attacks(const Board& board, int color);
+    
+    // Convert move to UCI notation
+    std::string move_to_uci(int move_value);
+    
+    // Convert UCI to move
+    int uci_to_move(const std::string& uci);
 }
 
 #endif // BOARD_HPP

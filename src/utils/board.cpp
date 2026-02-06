@@ -550,4 +550,32 @@ uint64_t all_attacks(const Board& board, int color) {
     return attacks;
 }
 
+// Convert move to UCI notation
+std::string Bitboards::move_to_uci(int move_value) {
+    int from = move_value >> 6;
+    int to = move_value & 63;
+    char from_file = 'a' + file_of(from);
+    char from_rank = '1' + rank_of(from);
+    char to_file = 'a' + file_of(to);
+    char to_rank = '1' + rank_of(to);
+    std::string result;
+    result += from_file;
+    result += from_rank;
+    result += to_file;
+    result += to_rank;
+    return result;
+}
+
+// Convert UCI to move
+int Bitboards::uci_to_move(const std::string& uci) {
+    if (uci.length() < 4) return 0;
+    int from_file = uci[0] - 'a';
+    int from_rank = uci[1] - '1';
+    int to_file = uci[2] - 'a';
+    int to_rank = uci[3] - '1';
+    int from_sq = (from_rank << 3) | from_file;
+    int to_sq = (to_rank << 3) | to_file;
+    return (from_sq << 6) | to_sq;
+}
+
 } // namespace Bitboards

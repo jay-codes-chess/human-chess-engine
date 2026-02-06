@@ -158,12 +158,15 @@ void cmd_go(const std::vector<std::string>& tokens) {
     // Perform search
     auto result = Search::search(current_position, movetime, depth);
     
+    // Convert move to UCI notation
+    std::string best_move_uci = Bitboards::move_to_uci(result.best_move);
+    
     // Output result
     std::cout << "info depth " << result.depth;
-    std::cout << " score cp " << result.score;
+    std::cout << " score cp " << (result.score / 100);
     std::cout << " nodes " << result.nodes;
     std::cout << " time " << result.time_ms;
-    std::cout << " pv " << result.best_move << std::endl;
+    std::cout << " pv " << best_move_uci << std::endl;
     
     // Verbal PV if enabled
     if (options.verbal_pv) {
