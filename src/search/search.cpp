@@ -402,6 +402,11 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
         return 0;
     }
     
+    // Safety: limit max depth to prevent stack overflow
+    if (depth > 20) {
+        return evaluate_position(board, color);
+    }
+    
     // Check transposition table
     int tt_score, tt_move;
     if (depth > 0 && tt_probe(board.hash, depth, tt_score, tt_move)) {
@@ -525,6 +530,9 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     stop_search = false;
     nodes_searched = 0;
     
+    // Safety: cap max depth
+    if (max_search_depth > 20) max_search_depth = 20;
+    
     // Generate legal moves for fallback
     auto legal_moves = generate_moves(board);
     if (legal_moves.empty()) {
@@ -536,6 +544,7 @@ SearchResult search(const std::string& fen, int max_time_ms_param, int max_searc
     // Iterative deepening: search depth 1, 2, 3... up to max_search_depth
     for (int depth = 1; depth <= max_search_depth; depth++) {
         if (should_stop()) break;
+        if (nodes_searched > 50000000) break;  // 50M node safety limit
         
         search_depth = depth;
         
