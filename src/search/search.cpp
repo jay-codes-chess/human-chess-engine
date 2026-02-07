@@ -43,11 +43,11 @@ struct TTEntry {
     uint8_t flag;  // 0=empty, 1=alpha, 2=beta, 3=exact
 };
 
-static const int TT_SIZE = 1 << 20;  // 1M entries
+static const int TT_SIZE = 1 << 18;  // 256K entries (smaller, safer)
 static TTEntry* transposition_table;
 
 // Killer moves - moves that caused cutoffs at sibling nodes
-static int killer_moves[64][2];  // [depth][2 killer moves]
+static int killer_moves[32][2];  // [depth][2 killer moves] - smaller
 
 // History heuristic - scores moves based on success
 static int history_scores[64][64];  // [from][to] history score
@@ -417,6 +417,11 @@ int alpha_beta(Board& board, int depth, int alpha, int beta, int color) {
     // Terminal position or max depth - use quiescence search
     if (depth == 0) {
         return quiescence_search(board, alpha, beta, color);
+    }
+    
+    // Safety: limit recursion depth
+    if (depth > 16) {
+        return evaluate_position(board, color);
     }
     
     // Check for checkmate (simplified)
