@@ -113,27 +113,57 @@ void cmd_is_ready() {
 
 void cmd_position(const std::vector<std::string>& tokens) {
     std::string fen;
+    Board board;
     
     // Handle different position commands
     if (tokens.size() >= 2 && tokens[1] == "startpos") {
         // Standard starting position
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        board.set_start_position();
     } else if (tokens.size() >= 2 && tokens[1] == "fen") {
         // Custom FEN - assemble from tokens[2-7]
         std::string fen_parts[6] = {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq", "-", "0", "1"};
         for (int i = 2; i < 8 && i < (int)tokens.size(); i++) {
             fen_parts[i-2] = tokens[i];
         }
-        fen = fen_parts[0] + " " + fen_parts[1] + " " + fen_parts[2] + 
-              " " + fen_parts[3] + " " + fen_parts[4] + " " + fen_parts[5];
+        std::string fen_string = fen_parts[0] + " " + fen_parts[1] + " " + fen_parts[2] + 
+                                 " " + fen_parts[3] + " " + fen_parts[4] + " " + fen_parts[5];
+        board.set_from_fen(fen_string);
     } else {
         // Default to starting position
-        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        board.set_start_position();
     }
     
-    current_position = fen;
+    // Parse and apply moves (format: "moves e2e4 e7e5 ...")
+    bool in_moves = false;
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (tokens[i] == "moves") {
+            in_moves = true;
+            continue;
+        }
+        if (in_moves && tokens[i].length() >= 4) {
+            std::string move_str = tokens[i];
+            int move = Bitboards::uci_to_move(move_str);
+            if (move != 0) {
+                // Make move on board
+                int from = move >> 6;
+                int to = move & 63;
+                int piece = board.piece_at(from);
+                int color = board.color_at(from);
+                int captured = board.piece_at(to);
+                
+                board.remove_piece(from);
+                board.add_piece(to, piece, color);
+                
+                // Handle promotion (simplified - always promote to queen)
+                if ((move & (7 << 12)) != 0) {
+                    board.remove_piece(to);
+                    board.add_piece(to, QUEEN, color);
+                }
+            }
+        }
+    }
     
-    // Parse moves if present (simplified - just ignore for now)
+    current_position = board.get_fen();
 }
 
 void cmd_go(const std::vector<std::string>& tokens) {
