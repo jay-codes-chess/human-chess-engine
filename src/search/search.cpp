@@ -70,6 +70,10 @@ void update_history(int move, int depth, int bonus) {
 
 // Initialize search
 void initialize() {
+    // Initialize time point to avoid uninitialized use
+    start_time = std::chrono::steady_clock::now();
+    
+    // Initialize transposition table
     transposition_table = new TTEntry[TT_SIZE];
     for (int i = 0; i < TT_SIZE; i++) {
         transposition_table[i].hash = 0;
@@ -78,6 +82,7 @@ void initialize() {
         transposition_table[i].move = 0;
         transposition_table[i].flag = 0;
     }
+    
     // Initialize history and killer tables
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 2; j++) {
