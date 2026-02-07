@@ -24,17 +24,29 @@ void cmd_evaluate();
 void loop(int argc, char* argv[]) {
     std::string cmd;
     
-    std::cout << "Human Chess Engine v0.1" << std::endl;
-    std::cout << "Type 'uci' to enter UCI mode, 'quit' to exit." << std::endl;
+    // Enter UCI mode
+    std::cout << "id name Human Chess Engine v0.1" << std::endl;
+    std::cout << "id author Brendan & Jay" << std::endl;
     
+    // UCI options
+    std::cout << "option name PlayingStyle type combo default classical " <<
+                 "var classical var attacking var tactical var positional var technical" << std::endl;
+    std::cout << "option name SkillLevel type spin default 10 min 0 max 20" << std::endl;
+    std::cout << "option name Hash type spin default 64 min 1 max 1024" << std::endl;
+    std::cout << "option name Threads type spin default 1 min 1 max 32" << std::endl;
+    std::cout << "option name UseMCTS type check default true" << std::endl;
+    std::cout << "option name VerbalPV type check default false" << std::endl;
+    std::cout << "option name ShowImbalances type check default false" << std::endl;
+    
+    std::cout << "uciok" << std::endl;
+    
+    // Process commands
     while (std::getline(std::cin, cmd)) {
         std::istringstream ss(cmd);
         std::string token;
         ss >> token;
         
-        if (token == "uci") {
-            cmd_uci();
-        } else if (token == "isready") {
+        if (token == "isready") {
             cmd_is_ready();
         } else if (token == "quit") {
             break;
@@ -90,22 +102,7 @@ void cmd_evaluate() {
 }
 
 // UCI protocol commands
-void cmd_uci() {
-    std::cout << "id name Human Chess Engine v0.1" << std::endl;
-    std::cout << "id author Brendan & Jay" << std::endl;
-    
-    // UCI options
-    std::cout << "option name PlayingStyle type combo default classical " <<
-                 "var classical var attacking var tactical var positional var technical" << std::endl;
-    std::cout << "option name SkillLevel type spin default 10 min 0 max 20" << std::endl;
-    std::cout << "option name Hash type spin default 64 min 1 max 1024" << std::endl;
-    std::cout << "option name Threads type spin default 1 min 1 max 32" << std::endl;
-    std::cout << "option name UseMCTS type check default true" << std::endl;
-    std::cout << "option name VerbalPV type check default false" << std::endl;
-    std::cout << "option name ShowImbalances type check default false" << std::endl;
-    
-    std::cout << "uciok" << std::endl;
-}
+// Note: id and options are now output in loop() for cleaner UCI protocol
 
 void cmd_is_ready() {
     std::cout << "readyok" << std::endl;
@@ -171,15 +168,21 @@ void cmd_go(const std::vector<std::string>& tokens) {
     int movetime = 30000;
     bool infinite = false;
     
+    // If no parameters, default to infinite analysis
+    if (tokens.size() <= 1) {
+        infinite = true;
+        movetime = 3600000;  // 1 hour max
+    }
+    
     // Parse go parameters
     for (size_t i = 0; i < tokens.size(); i++) {
         if (tokens[i] == "depth" && i + 1 < tokens.size()) {
             depth = std::stoi(tokens[i + 1]);
         } else if (tokens[i] == "movetime" && i + 1 < tokens.size()) {
             movetime = std::stoi(tokens[i + 1]);
-        } else if (tokens[i] == "infinite") {
+        } else if (tokens[i] == "infinite" || tokens[i] == "ponder") {
             infinite = true;
-            movetime = 3600000;  // 1 hour max for "infinite"
+            movetime = 3600000;  // 1 hour max for infinite/ponder
         }
     }
     

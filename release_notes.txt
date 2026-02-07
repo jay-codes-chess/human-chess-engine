@@ -1,0 +1,32 @@
+First public release - Fully tested and working!
+
+**Test Results (all 6 tests pass):**
+✓ Basic UCI handshake works
+✓ Starting position works  
+✓ FEN parsing works
+✓ Custom FEN works
+✓ Move sequence works
+✓ Display works
+
+**Windows Setup:**
+Download all 3 files:
+- human-chess-engine.exe - the engine
+- libgcc_s_seh-1.dll - MinGW runtime  
+- libstdc++-6.dll - C++ standard library
+
+Put all 3 files in the same folder, then add human-chess-engine.exe to Arena/Fritz.
+
+**Features:**
+- Alpha-beta search with iterative deepening
+- Quiescence search for tactical stability
+- Killer moves + history heuristic for move ordering
+- Silman-based evaluation (imbalances, pawn structures)
+- UCI protocol compatible with all GUIs
+- Style profiles: Classical, Attacking, Tactical, Positional, Technical
+
+**Usage (macOS/Linux):**
+./human-chess-engine
+uci
+position startpos
+go depth 4
+quit
