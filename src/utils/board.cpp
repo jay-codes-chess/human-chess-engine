@@ -48,13 +48,14 @@ bool Board::set_from_fen(const std::string& fen) {
     std::string board_str, side_str, castling_str, ep_str;
     ss >> board_str >> side_str >> castling_str >> ep_str;
     
-    // Parse board
-    int sq = 56;
+    // Parse board - FEN format: rank 8 first, rank 1 last
+    int file = 0, rank = 7;  // Start at a8 (file 0, rank 7 in 0-indexed)
     for (char c : board_str) {
         if (c == '/') {
-            sq -= 16;
+            file = 0;
+            rank--;
         } else if (c >= '1' && c <= '8') {
-            sq += (c - '0');
+            file += (c - '0');
         } else {
             int piece_type = NO_PIECE;
             bool is_white = !std::islower(c);
@@ -67,8 +68,9 @@ bool Board::set_from_fen(const std::string& fen) {
                 case 'q': piece_type = QUEEN; break;
                 case 'k': piece_type = KING; break;
             }
+            int sq = file + rank * 8;
             add_piece(sq, piece_type, is_white ? WHITE : BLACK);
-            sq++;
+            file++;
         }
     }
     
